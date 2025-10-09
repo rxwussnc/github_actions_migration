@@ -1,0 +1,328 @@
+name: AdventDirect_Teams/Genesis_Cloud_Platform/test/DataLab_UI_Clone
+on:
+  schedule:
+  - cron: 0 9 * * *
+  workflow_dispatch:
+    inputs:
+      ENVIRONMENT:
+        required: false
+        description: 'Enter an platform environment, default is main environment: https://dev-genesis.ssnc-corp.cloud'
+        default: https://feature-51406-qa-dev-genesis.ssnc-corp.cloud
+      PARALLEL_SCHEME:
+        required: false
+        description: 'Enter parallel scheme: run tests parallel at feature or scenario level. Default is feature'
+        default: feature
+      PARALLEL_PROCESSES:
+        required: false
+        description: Enter a process number to run. Default is 8
+        default: '8'
+      TEST_BRANCH:
+        required: false
+        description: Enter test branch for ui automation repo to test against. Default is master branch
+        default: AOCWIT-50012
+      TAGS:
+        required: false
+        description: 'Enter tags for test scope: datalab ui full regression tests: @datalab'
+        default: "@datalab"
+env:
+#   # This item has no matching transformer
+#   github:
+defaults:
+  run:
+    working-directory: '"/jnkns/$BUILD_NUMBER"'
+jobs:
+  Clone_Repo:
+    name: Clone Repo
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             sh "git clone https://${{ env.github_USR }}:${{ env.github_PSW }}@code.ssnc.dev/ssc-advent/genesis-falcon-tests-ui.git"
+#                                 sh "git branch -a"
+#                                 sh "git checkout ${{ env.TEST_BRANCH }}"
+#                                 sh "git branch --show-current"
+#                                 sh "pip3 install -r requirements.txt"
+#                                 sh "pip3 list"
+#                                 sh "sed -i 's,base_url = '.*',base_url = \"${{ env.ENVIRONMENT }}\",g' assets/config/config.py"
+#                                 println "base_url set to: ${{ env.ENVIRONMENT }}"
+#                                 sh "cat assets/config/config.py"
+#                                 currentBuild.displayName = "${{ env.BUILD_NUMBER }}-UITest-[${{ env.ENVIRONMENT }}]-[${{ env.TEST_BRANCH }}]-[${{ env.TAGS }}]"
+  Run_Tests:
+    name: Run Tests
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs: Clone_Repo
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             try {
+#                                         sh "python3 -m behavex --log-capture -t ${{ env.TAGS }} --parallel-processes ${{ env.PARALLEL_PROCESSES }} --parallel-scheme ${{ env.PARALLEL_SCHEME }} -o output"
+#                                 }
+#                                 catch (error) {
+#                                         println "Run Tests - Found errors in testing"
+#                                         currentBuild.result = 'FAILURE'
+#                                 }
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             publishReport('output', 'DataLab UI Automation Report')
+#                                     archiveArtifacts(artifacts: 'output/**', allowEmptyArchive: true)
+#       if: always()
+  Re_run_Tests:
+    name: Re-run Tests
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs: Run_Tests
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             if (fileExists('output/failing_scenarios.txt') ) {
+#                                         try {
+#                                             sh "python3 -m behavex --log-capture -rf output/failing_scenarios.txt --parallel-processes ${{ env.PARALLEL_PROCESSES }} --parallel-scheme ${{ env.PARALLEL_SCHEME }} -o output_rerun"
+#                                         } catch (error) {
+#                                             println "Re-run Test - Found errors in testing"
+#                                             currentBuild.result = 'FAILURE'
+#                                         }
+#                                     } else {
+#                                         println "all tests passed - no failing_scenarios.txt file generated"
+#                                     }
+#     # This item has no matching transformer
+#     - publishReport:
+#       - isLiteral: true
+#         value: output_rerun
+#       - isLiteral: true
+#         value: DataLab UI Automation Re-run Report
+#       if: always()
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.1.0
+      if: always()
+      with:
+        if-no-files-found: ignore
+        path: output_rerun/**
+  Second_Re_run_Tests:
+    name: Second Re-run Tests
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs: Re_run_Tests
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             if (fileExists('output_rerun/failing_scenarios.txt') ) {
+#                                         try {
+#                                             sh "python3 -m behavex --log-capture -rf output_rerun/failing_scenarios.txt --parallel-processes ${{ env.Process_Number }} -o output_rerun_second"
+#                                         } catch (error) {
+#                                             println "Second Re-run Test - Found errors in testing"
+#                                             currentBuild.result = 'FAILURE'
+#                                         }
+#                                     } else {
+#                                         println "all tests passed - no failing_scenarios.txt file generated"
+#                                     }
+#     # This item has no matching transformer
+#     - publishReport:
+#       - isLiteral: true
+#         value: output_rerun_second
+#       - isLiteral: true
+#         value: DataLab UI Automation Second Time Re-run Report
+#       if: always()
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.1.0
+      if: always()
+      with:
+        if-no-files-found: ignore
+        path: output_rerun_second/**
+  Publish_Videos_Traces:
+    name: Publish Videos/Traces
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs: Second_Re_run_Tests
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: println('Publish Videos/Traces Reports')
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        if-no-files-found: ignore
+        name: UI Videos
+        path: videos
+      if: always()
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        if-no-files-found: ignore
+        name: UI Traces
+        path: trace
+      if: always()
+  Upload_Results_to_Report_Portal:
+    if:
+#       # Unsupported condition(s) [expression]
+    name: Upload Results to Report Portal
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs: Publish_Videos_Traces
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             def launch_environment = ""
+#                                 if (params.ENVIRONMENT.contains("-qa-dev-genesis.ssnc-corp.cloud")) {
+#                                   launch_environment = "QA_BRANCH_ENV"
+#                                 } else if (params.ENVIRONMENT.equals("https://dev-genesis.ssnc-corp.cloud")) {
+#                                   launch_environment = "MAIN_ENV"
+#                                 }
+#
+#                                 // Define attributes
+#                                 def attributes = "Entitlement:DataLab AutoType:UI Environment:${{ env.launch_environment }} Branch:${{ env.TEST_BRANCH }}"
+#                                 def launchName = "Falcon_DataLab_UI"
+#                                 def zip_file_name = "GENESIS_PM#${{ env.launchName }}.zip"
+#
+#                                 // Apply updates using sed
+#                                 sh """
+#                                     sed -i 's/launch_name = Falcon_Gate/launch_name = ${{ env.launchName }}/g' behave.ini || exit 1
+#                                     sed -i 's/launch_attributes = Tenant:201/launch_attributes = ${{ env.attributes }}/g' behave.ini || exit 1
+#                                 """
+#                                 sh "cat behave.ini"
+#
+#                                 // Print variables for debugging
+#                                 println "Launch Name: ${{ env.launchName }}"
+#                                 println "Attributes: ${{ env.attributes }}"
+#
+#                                 // Execute the Python script
+#                                 try {
+#                                     sh "python3 report_portal_integration.py --result_folder output --jenkins_build_link '${{ env.BUILD_URL }}'"
+#                                 }
+#                                 catch (error) {
+#                                     println "Error processing the report.json objects"
+#                                 }
+#
+#                                 withCredentials([string(credentialsId: 'REPORT_PORTAL_S3_ACCESS_ID', variable: 'RP_S3_ACCESS_ID'),
+#                                     string(credentialsId: 'REPORT_PORTAL_S3_ACCESS_KEY', variable: 'RP_S3_ACCESS_KEY')])
+#                                 {
+#                                     try {
+#                                         sh "aws configure set aws_access_key_id ${{ env.RP_S3_ACCESS_ID }} --profile RP_CREDS"
+#                                         sh "aws configure set aws_secret_access_key ${{ env.RP_S3_ACCESS_KEY }} --profile RP_CREDS"
+#                                     }
+#                                     catch (error) {
+#                                         println "Error while configuring aws profile ${{ env.error }}"
+#                                     }
+#
+#                                     try {
+#                                         sh "aws s3 cp output s3://terraform-state-report-portal/RP_ReportsToUpload --recursive --exclude '*' --include '*.zip' --endpoint-url http://wdc-ecs-01-dtn.dstcorp.net:9020 --profile RP_CREDS"
+#                                     }
+#                                     catch (error) {
+#                                         println "Error while uploading to S3 ${{ env.error }}"
+#                                     }
+#
+#                                     try {
+#                                         sh "aws configure set aws_access_key_id None --profile RP_CREDS"
+#                                         sh "aws configure set aws_secret_access_key None --profile RP_CREDS"
+#                                     }
+#                                     catch (error) {
+#                                         println "Error while resetting aws profile: ${{ env.error }}"
+#                                     }
+#                                 }
+  Post-Build:
+    if: always()
+    name: Post Build
+    runs-on:
+      - self-hosted
+      - advsgdpalma901
+    needs:
+    - Clone_Repo
+    - Run_Tests
+    - Re_run_Tests
+    - Second_Re_run_Tests
+    - Publish_Videos_Traces
+    - Upload_Results_to_Report_Portal
+    steps:
+    - name: snapshot post build workflow status
+      run: |-
+        echo "failure=${{ contains(needs.*.result,'failure') && !contains(needs.*.result,'cancelled') }}" >> $GITHUB_OUTPUT
+        echo "success=${{ contains(needs.*.result,'success') && !contains(needs.*.result,'cancelled') && !contains(needs.*.result,'failure') }}" >> $GITHUB_OUTPUT
+      id: post_build
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: println "Failed"
+#       if: steps.post_build.outputs.failure == 'true'
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: println "Success"
+#       if: steps.post_build.outputs.success == 'true'
+    - name: clean workspace
+      shell: bash
+      run: rm -rf ${{ github.workspace }}/*
+      if: always()
+    - name: delete directory
+      shell: bash
+      run: rm -rf "`pwd`"
+      working-directory: "${{env.workspace}@tmp}}"
+      if: always()
+    - name: delete directory
+      shell: bash
+      run: rm -rf "`pwd`"
+      working-directory: "${{env.workspace}@script}}"
+      if: always()
+    - name: delete directory
+      shell: bash
+      run: rm -rf "`pwd`"
+      working-directory: "${{env.workspace}@libs}}"
+      if: always()
